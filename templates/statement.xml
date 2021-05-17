@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<problem
+   package = "ru.ejudge.sample_contest"
+   id = "input_short_name"
+   type = "standard">
+  <statement language="ru_RU">
+    <title>Задача input_short_name</title>
+    <description>
+        <p>Не забути додати умову та image Не забути додати умову Не забути додати умову Не забути додати умову
+        </p>
+        <image></image>
+    </description>
+  </statement>
+  <examples>
+    <example>
+      <input>test_value</input>
+      <output>test_result</output>
+    </example>
+  </examples>
+</problem>

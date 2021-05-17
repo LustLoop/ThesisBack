@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 from sympy import *
 from sympy.abc import x
@@ -31,12 +32,17 @@ def parse_expression():
     contest_id = '8'
     contest_dir_name = get_contest_file_name(contest_id)
     problem_id = '33'
-    short_name = 'test'
-    long_name = 'teeeeest'
+    short_name = 'A'
+    long_name = 'AAAAAAAAA'
     variants_count = '5'
     user_variants_dict = {"user1": 2, "user2": 1, "user3": 3}
 
-    create_config_file(contest_id, contest_dir_name, problem_id, short_name, long_name, variants_count)
+    contest_directory = "./output_files/{}".format(contest_dir_name)
+
+    Path(contest_directory).mkdir(parents=True, exist_ok=True)
+
+    create_config_file(contest_id, contest_dir_name, problem_id, short_name,
+                       long_name, variants_count, contest_directory)
 
     generate_contest_file(contest_dir_name, contest_id, 'testName', 'testNameEn')
 
@@ -44,11 +50,11 @@ def parse_expression():
 
     print(process_sympy(latex_expression))
 
+    # put it into the get endpoint
     users = get_users_from_db()
 
-    generate_variant_map(user_variants_dict)
-
-    print(users)
+    generate_variant_map(user_variants_dict, contest_directory)
+    generate_problems_files(short_name, contest_directory, variants_count, 6)
 
     # os.system(' ./shell_scripts/main_script.sh {} {}'.format(str('3'), str('4')))
 
@@ -139,13 +145,16 @@ def create_xml_file(inp_id, inp_name, inp_name_en, inp_dir_name):
     return contest_file.toprettyxml(indent="\t")
 
 
-def create_config_file(cont_id, dir_name, problem_id, short_name, long_name, variants_count):
+def create_config_file(cont_id, dir_name, problem_id, short_name, long_name, variants_count, contest_directory):
+    conf_path = '{}/conf'.format(contest_directory)
+    Path(conf_path).mkdir(parents=True, exist_ok=True)
+
     check_words = ('input_contest_id', 'input_root_dir', 'input_problem_id', 'input_problem_short_name',
                    'input_problem_long_name', 'input_problem_variant_num')
     rep_words = (cont_id, dir_name, problem_id, short_name, long_name, variants_count)
 
     input_file = open('templates/serve.cfg', 'r')
-    result_file = open('output_files/serve.cfg', 'w')
+    result_file = open('{}/serve.cfg'.format(conf_path), 'w')
 
     for line in input_file:
         for check, rep in zip(check_words, rep_words):
@@ -165,9 +174,12 @@ def get_users_from_db():
     return user_logins
 
 
-def generate_variant_map(user_variants_dict):
+def generate_variant_map(user_variants_dict, contest_directory):
+    conf_path = '{}/conf'.format(contest_directory)
+    Path(conf_path).mkdir(parents=True, exist_ok=True)
+
     input_file = open('templates/variant.map', 'r')
-    result_file = open('output_files/variant.map', 'w')
+    result_file = open('{}/variant.map'.format(conf_path), 'w')
 
     users_variant_part = ''
 
@@ -179,6 +191,56 @@ def generate_variant_map(user_variants_dict):
         result_file.write(line)
     input_file.close()
     result_file.close()
+
+
+def generate_problems_files(input_short_name, contest_directory, vars_num, tests_count):
+    problem_dir = '{}/problems'.format(contest_directory)
+    Path(problem_dir).mkdir(parents=True, exist_ok=True)
+    for problem_vars in range(0, vars_num + 1):
+        variant_dir = '{0}/{1}-{2}'.format(problem_dir, input_short_name, problem_vars)
+        Path(variant_dir).mkdir(parents=True, exist_ok=True)
+
+        generate_statement_file(input_short_name, '1', '1', variant_dir)
+        generate_tests(variant_dir, tests_count)
+        generate_solutions(variant_dir)
+
+
+def generate_statement_file(input_short_name, test_value, test_result, variant_dir):
+    # add image
+    check_words = ('input_short_name', 'test_value', 'test_result')
+    rep_words = (input_short_name, test_value, test_result)
+
+    input_file = open('templates/statement.xml', 'r')
+    result_file = open('{}/statement.xml'.format(variant_dir), 'w')
+
+    for line in input_file:
+        for check, rep in zip(check_words, rep_words):
+            line = line.replace(check, rep)
+        result_file.write(line)
+    input_file.close()
+    result_file.close()
+
+
+def generate_tests(variant_dir, tests_count):
+    tests_dir = '{}/tests'.format(variant_dir)
+    Path(tests_dir).mkdir(parents=True, exist_ok=True)
+    for test_pair_id in range(1, tests_count + 1):
+        # generate tests here
+        dat_file = open('{0}/00{1}.dat'.format(tests_dir, test_pair_id), 'w')
+        dat_file.write('1')
+        dat_file.close()
+        ans_file = open('{0}/00{1}.ans'.format(tests_dir, test_pair_id), 'w')
+        ans_file.write('1')
+        ans_file.close()
+
+
+def generate_solutions(variant_dir):
+    solutions_dir = '{}/all_solutions'.format(variant_dir)
+    Path(solutions_dir).mkdir(parents=True, exist_ok=True)
+    solution_file = open('{}/a_python3.py'.format(solutions_dir), 'w')
+    # generate solution python code here
+    solution_file.write('a = int(input())\nprint(1)')
+    solution_file.close()
 
 
 if __name__ == '__main__':
