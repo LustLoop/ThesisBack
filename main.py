@@ -34,7 +34,7 @@ def parse_expression():
     problem_id = '33'
     short_name = 'A'
     long_name = 'AAAAAAAAA'
-    variants_count = '5'
+    variants_count = 5
     user_variants_dict = {"user1": 2, "user2": 1, "user3": 3}
 
     contest_directory = "./output_files/{}".format(contest_dir_name)
@@ -151,7 +151,7 @@ def create_config_file(cont_id, dir_name, problem_id, short_name, long_name, var
 
     check_words = ('input_contest_id', 'input_root_dir', 'input_problem_id', 'input_problem_short_name',
                    'input_problem_long_name', 'input_problem_variant_num')
-    rep_words = (cont_id, dir_name, problem_id, short_name, long_name, variants_count)
+    rep_words = (cont_id, dir_name, problem_id, short_name, long_name, str(variants_count))
 
     input_file = open('templates/serve.cfg', 'r')
     result_file = open('{}/serve.cfg'.format(conf_path), 'w')
