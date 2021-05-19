@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-
 from sympy import *
 from sympy.abc import x
 from flask import Flask
@@ -8,6 +7,7 @@ from flask import request
 from flask_cors import CORS
 from xml.dom import minidom
 from xml.etree import ElementTree as ET
+from flask import jsonify
 
 from latex2sympy_custom4.process_latex import process_sympy
 
@@ -15,12 +15,37 @@ app = Flask(__name__)
 cors = CORS(app, resources={r"/*": {"origins": "*"}})
 
 
+@app.route('/users', methods=['GET'])
+def get_users():
+    # change it to real db request
+    return jsonify([{'login': "user1", 'id': 2}, {'login': "user2", 'id': 1}, {'login': "user3", 'id': 3}])
+
+
+@app.route('/checkValidity', methods=['POST'])
+def check_validity():
+    test_required = 6
+
+    request_data = request.get_json()
+
+    latex_expression = request_data['content']
+    latex_expression = latex_expression.replace('f(x)=', '')
+    sympy_expression = process_sympy(latex_expression)
+
+    tests_count = 0
+    for test_data in range(-10, 10):
+        if create_tests(sympy_expression, test_data) != nan:
+            print('not nan')
+            tests_count += 1
+        if tests_count == test_required:
+            return 'true'
+    return 'false'
+
+
 @app.route('/', methods=['POST'])
 def parse_expression():
     request_data = request.get_json()
 
     latex_expression = request_data['latexExpression']
-
     latex_expression = latex_expression.replace('f(x)=', '')
 
     print(latex_expression)
@@ -29,13 +54,16 @@ def parse_expression():
 
     print('{} - sympy expression'.format(sympy_expression))
 
+    # input data
     contest_id = '8'
-    contest_dir_name = get_contest_file_name(contest_id)
     problem_id = '33'
     short_name = 'A'
     long_name = 'AAAAAAAAA'
     variants_count = 5
     user_variants_dict = {"user1": 2, "user2": 1, "user3": 3}
+
+    # hardcode data
+    contest_dir_name = get_contest_file_name(contest_id)
 
     contest_directory = "./output_files/{}".format(contest_dir_name)
 
@@ -97,6 +125,16 @@ def create_xml_file(inp_id, inp_name, inp_name_en, inp_dir_name):
     name_en_text = contest_file.createTextNode(inp_name_en)
     name_en_child.appendChild(name_en_text)
     contest.appendChild(name_en_child)
+
+    default_locale_child = contest_file.createElement('default_locale')
+    default_locale_text = contest_file.createTextNode('Russian')
+    default_locale_child.appendChild(default_locale_text)
+    contest.appendChild(default_locale_child)
+
+    register_url_child = contest_file.createElement('register_url')
+    register_url_text = contest_file.createTextNode('http://localhost/cgi-bin/new-register')
+    register_url_child.appendChild(register_url_text)
+    contest.appendChild(register_url_child)
 
     register_access_child = contest_file.createElement('register_access')
     register_access_child.setAttribute('default', 'allow')
@@ -241,6 +279,22 @@ def generate_solutions(variant_dir):
     # generate solution python code here
     solution_file.write('a = int(input())\nprint(1)')
     solution_file.close()
+
+
+def create_tests(expression, test_data):
+    if 'I' in str(expression):
+        return nan
+    expr = Mul(1, expression, evaluate=False)
+
+    if expr.subs(x, test_data) == nan or expr.subs(x, test_data) == zoo:
+        return nan
+    result = expr.subs(x, test_data).evalf()
+    if 'I' in str(result):
+        return nan
+    print(expr)
+    print(expr.subs(x, test_data))
+    print(test_data)
+    return result
 
 
 if __name__ == '__main__':
